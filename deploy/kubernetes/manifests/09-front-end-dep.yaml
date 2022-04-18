@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: front-end
-  namespace: sock-shop
+  namespace: __NAMESPACE__
 spec:
   replicas: 1
   selector:
@@ -14,9 +14,11 @@ spec:
       labels:
         name: front-end
     spec:
+      imagePullSecrets:
+      - name: google-registry
       containers:
       - name: front-end
-        image: weaveworksdemos/front-end:0.3.12
+        image: __GROUP__/front-end:__TAG_PREFIX__0.3.12
         resources:
           limits:
             cpu: 300m

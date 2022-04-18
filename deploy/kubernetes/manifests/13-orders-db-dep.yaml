@@ -5,7 +5,7 @@ metadata:
   name: orders-db
   labels:
     name: orders-db
-  namespace: sock-shop
+  namespace: __NAMESPACE__
 spec:
   replicas: 1
   selector:
@@ -16,6 +16,8 @@ spec:
       labels:
         name: orders-db
     spec:
+      imagePullSecrets:
+      - name: google-registry
       containers:
       - name: orders-db
         image: mongo

@@ -5,7 +5,7 @@ metadata:
   name: catalogue-db
   labels:
     name: catalogue-db
-  namespace: sock-shop
+  namespace: __NAMESPACE__
 spec:
   replicas: 1
   selector:
@@ -16,9 +16,11 @@ spec:
       labels:
         name: catalogue-db
     spec:
+      imagePullSecrets:
+      - name: google-registry
       containers:
       - name: catalogue-db
-        image: weaveworksdemos/catalogue-db:0.3.0
+        image: __GROUP__/catalogue-db:__TAG_PREFIX__0.3.5
         env:
           - name: MYSQL_ROOT_PASSWORD
             value: fake_password
@@ -27,5 +29,17 @@ spec:
         ports:
         - name: mysql
           containerPort: 3306
+        volumeMounts:
+        - mountPath: /var/run/mysqld
+          name: var-run-volume
+        - mountPath: /tmp
+          name: tmp-volume
+      volumes:
+        - name: tmp-volume
+          emptyDir:
+            medium: Memory
+        - name: var-run-volume
+          emptyDir:
+            medium: Memory
       nodeSelector:
         beta.kubernetes.io/os: linux

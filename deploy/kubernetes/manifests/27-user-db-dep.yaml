@@ -5,7 +5,7 @@ metadata:
   name: user-db
   labels:
     name: user-db
-  namespace: sock-shop
+  namespace: __NAMESPACE__
 spec:
   replicas: 1
   selector:
@@ -16,10 +16,11 @@ spec:
       labels:
         name: user-db
     spec:
+      imagePullSecrets:
+      - name: google-registry
       containers:
       - name: user-db
-        image: weaveworksdemos/user-db:0.3.0
-
+        image: __GROUP__/user-db:__TAG_PREFIX__0.4.7
         ports:
         - name: mongo
           containerPort: 27017
@@ -33,10 +34,15 @@ spec:
               - SETUID
           readOnlyRootFilesystem: true
         volumeMounts:
+        - mountPath: /data
+          name: data-volume
         - mountPath: /tmp
           name: tmp-volume
       volumes:
         - name: tmp-volume
+          emptyDir:
+            medium: Memory
+        - name: data-volume
           emptyDir:
             medium: Memory
       nodeSelector:

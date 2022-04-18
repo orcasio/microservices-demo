@@ -5,7 +5,7 @@ metadata:
   name: payment
   labels:
     name: payment
-  namespace: sock-shop
+  namespace: __NAMESPACE__
 spec:
   replicas: 1
   selector:
@@ -16,9 +16,11 @@ spec:
       labels:
         name: payment
     spec:
+      imagePullSecrets:
+      - name: google-registry
       containers:
       - name: payment
-        image: weaveworksdemos/payment:0.4.3
+        image: __GROUP__/payment:__TAG_PREFIX__0.4.3
         resources:
           limits:
             cpu: 200m
@@ -27,7 +29,7 @@ spec:
             cpu: 99m
             memory: 100Mi
         ports:
-        - containerPort: 80
+        - containerPort: 8080
         securityContext:
           runAsNonRoot: true
           runAsUser: 10001
@@ -40,14 +42,14 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 80
-          initialDelaySeconds: 300
+            port: 8080
+          initialDelaySeconds: 60
           periodSeconds: 3
         readinessProbe:
           httpGet:
             path: /health
-            port: 80
-          initialDelaySeconds: 180
+            port: 8080
+          initialDelaySeconds: 60
           periodSeconds: 3
       nodeSelector:
         beta.kubernetes.io/os: linux

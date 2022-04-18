@@ -5,7 +5,7 @@ metadata:
   name: user
   labels:
     name: user
-  namespace: sock-shop
+  namespace: __NAMESPACE__
 spec:
   replicas: 1
   selector:
@@ -16,9 +16,11 @@ spec:
       labels:
         name: user
     spec:
+      imagePullSecrets:
+      - name: google-registry
       containers:
       - name: user
-        image: weaveworksdemos/user:0.4.7
+        image: __GROUP__/user:__TAG_PREFIX__0.4.7
         resources:
           limits:
             cpu: 300m
@@ -27,7 +29,7 @@ spec:
             cpu: 100m
             memory: 100Mi
         ports:
-        - containerPort: 80
+        - containerPort: 8080
         env:
         - name: mongo
           value: user-db:27017
@@ -43,13 +45,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 80
+            port: 8080
           initialDelaySeconds: 300
           periodSeconds: 3
         readinessProbe:
           httpGet:
             path: /health
-            port: 80
+            port: 8080
           initialDelaySeconds: 180
           periodSeconds: 3
       nodeSelector:

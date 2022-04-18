@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: sock-shop
+  name: socks-prod
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -10,7 +10,7 @@ metadata:
   name: carts
   labels:
     name: carts
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   replicas: 1
   selector:
@@ -21,12 +21,26 @@ spec:
       labels:
         name: carts
     spec:
+      imagePullSecrets:
+      - name: google-registry
       containers:
       - name: carts
-        image: weaveworksdemos/carts:0.4.8
+        image: us-docker.pkg.dev/orcasio/global/carts:b0.4.8
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 300
+          periodSeconds: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 180
+          periodSeconds: 3
         env:
-         - name: JAVA_OPTS
-           value: -Xms64m -Xmx128m -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom -Dspring.zipkin.enabled=false
+        - name: JAVA_OPTS
+          value: -Xms64m -Xmx128m -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom -Dspring.zipkin.enabled=false
         resources:
           limits:
             cpu: 300m
@@ -35,7 +49,7 @@ spec:
             cpu: 100m
             memory: 200Mi
         ports:
-        - containerPort: 80
+        - containerPort: 8080
         securityContext:
           runAsNonRoot: true
           runAsUser: 10001
@@ -63,12 +77,12 @@ metadata:
         prometheus.io/scrape: 'true'
   labels:
     name: carts
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   ports:
     # the port that this service should serve on
   - port: 80
-    targetPort: 80
+    targetPort: 8080
   selector:
     name: carts
 ---
@@ -78,7 +92,7 @@ metadata:
   name: carts-db
   labels:
     name: carts-db
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   replicas: 1
   selector:
@@ -89,6 +103,8 @@ spec:
       labels:
         name: carts-db
     spec:
+      imagePullSecrets:
+      - name: google-registry
       containers:
       - name: carts-db
         image: mongo
@@ -120,7 +136,7 @@ metadata:
   name: carts-db
   labels:
     name: carts-db
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   ports:
     # the port that this service should serve on
@@ -135,7 +151,7 @@ metadata:
   name: catalogue
   labels:
     name: catalogue
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   replicas: 1
   selector:
@@ -146,12 +162,14 @@ spec:
       labels:
         name: catalogue
     spec:
+      imagePullSecrets:
+      - name: google-registry
       containers:
       - name: catalogue
-        image: weaveworksdemos/catalogue:0.3.5
+        image: us-docker.pkg.dev/orcasio/global/catalogue:b0.3.5
         command: ["/app"]
         args:
-        - -port=80
+        - -port=8080
         resources:
           limits:
             cpu: 200m
@@ -160,7 +178,7 @@ spec:
             cpu: 100m
             memory: 100Mi
         ports:
-        - containerPort: 80
+        - containerPort: 8080
         securityContext:
           runAsNonRoot: true
           runAsUser: 10001
@@ -173,13 +191,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 80
+            port: 8080
           initialDelaySeconds: 300
           periodSeconds: 3
         readinessProbe:
           httpGet:
             path: /health
-            port: 80
+            port: 8080
           initialDelaySeconds: 180
           periodSeconds: 3
       nodeSelector:
@@ -193,12 +211,12 @@ metadata:
         prometheus.io/scrape: 'true'
   labels:
     name: catalogue
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   ports:
     # the port that this service should serve on
   - port: 80
-    targetPort: 80
+    targetPort: 8080
   selector:
     name: catalogue
 ---
@@ -208,7 +226,7 @@ metadata:
   name: catalogue-db
   labels:
     name: catalogue-db
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   replicas: 1
   selector:
@@ -219,9 +237,11 @@ spec:
       labels:
         name: catalogue-db
     spec:
+      imagePullSecrets:
+      - name: google-registry
       containers:
       - name: catalogue-db
-        image: weaveworksdemos/catalogue-db:0.3.0
+        image: us-docker.pkg.dev/orcasio/global/catalogue-db:b0.3.5
         env:
           - name: MYSQL_ROOT_PASSWORD
             value: fake_password
@@ -230,6 +250,18 @@ spec:
         ports:
         - name: mysql
           containerPort: 3306
+        volumeMounts:
+        - mountPath: /var/run/mysqld
+          name: var-run-volume
+        - mountPath: /tmp
+          name: tmp-volume
+      volumes:
+        - name: tmp-volume
+          emptyDir:
+            medium: Memory
+        - name: var-run-volume
+          emptyDir:
+            medium: Memory
       nodeSelector:
         beta.kubernetes.io/os: linux
 ---
@@ -239,7 +271,7 @@ metadata:
   name: catalogue-db
   labels:
     name: catalogue-db
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   ports:
     # the port that this service should serve on
@@ -252,7 +284,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: front-end
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   replicas: 1
   selector:
@@ -263,9 +295,11 @@ spec:
       labels:
         name: front-end
     spec:
+      imagePullSecrets:
+      - name: google-registry
       containers:
       - name: front-end
-        image: weaveworksdemos/front-end:0.3.12
+        image: us-docker.pkg.dev/orcasio/global/front-end:b0.3.12
         resources:
           limits:
             cpu: 300m
@@ -308,7 +342,7 @@ metadata:
         prometheus.io/scrape: 'true'
   labels:
     name: front-end
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   type: NodePort
   ports:
@@ -324,7 +358,7 @@ metadata:
   name: orders
   labels:
     name: orders
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   replicas: 1
   selector:
@@ -335,9 +369,11 @@ spec:
       labels:
         name: orders
     spec:
+      imagePullSecrets:
+      - name: google-registry
       containers:
       - name: orders
-        image: weaveworksdemos/orders:0.4.7
+        image: us-docker.pkg.dev/orcasio/global/orders:b0.4.7
         env:
          - name: JAVA_OPTS
            value: -Xms64m -Xmx128m -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom -Dspring.zipkin.enabled=false
@@ -349,7 +385,7 @@ spec:
             cpu: 100m
             memory: 300Mi
         ports:
-        - containerPort: 80
+        - containerPort: 8080
         securityContext:
           runAsNonRoot: true
           runAsUser: 10001
@@ -377,12 +413,12 @@ metadata:
         prometheus.io/scrape: 'true'
   labels:
     name: orders
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   ports:
     # the port that this service should serve on
   - port: 80
-    targetPort: 80
+    targetPort: 8080
   selector:
     name: orders
 ---
@@ -392,7 +428,7 @@ metadata:
   name: orders-db
   labels:
     name: orders-db
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   replicas: 1
   selector:
@@ -403,6 +439,8 @@ spec:
       labels:
         name: orders-db
     spec:
+      imagePullSecrets:
+      - name: google-registry
       containers:
       - name: orders-db
         image: mongo
@@ -434,7 +472,7 @@ metadata:
   name: orders-db
   labels:
     name: orders-db
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   ports:
     # the port that this service should serve on
@@ -449,7 +487,7 @@ metadata:
   name: payment
   labels:
     name: payment
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   replicas: 1
   selector:
@@ -460,9 +498,11 @@ spec:
       labels:
         name: payment
     spec:
+      imagePullSecrets:
+      - name: google-registry
       containers:
       - name: payment
-        image: weaveworksdemos/payment:0.4.3
+        image: us-docker.pkg.dev/orcasio/global/payment:b0.4.3
         resources:
           limits:
             cpu: 200m
@@ -471,7 +511,7 @@ spec:
             cpu: 99m
             memory: 100Mi
         ports:
-        - containerPort: 80
+        - containerPort: 8080
         securityContext:
           runAsNonRoot: true
           runAsUser: 10001
@@ -484,14 +524,14 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 80
-          initialDelaySeconds: 300
+            port: 8080
+          initialDelaySeconds: 60
           periodSeconds: 3
         readinessProbe:
           httpGet:
             path: /health
-            port: 80
-          initialDelaySeconds: 180
+            port: 8080
+          initialDelaySeconds: 60
           periodSeconds: 3
       nodeSelector:
         beta.kubernetes.io/os: linux
@@ -504,12 +544,12 @@ metadata:
         prometheus.io/scrape: 'true'
   labels:
     name: payment
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   ports:
     # the port that this service should serve on
   - port: 80
-    targetPort: 80
+    targetPort: 8080
   selector:
     name: payment
 ---
@@ -519,7 +559,7 @@ metadata:
   name: queue-master
   labels:
     name: queue-master
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   replicas: 1
   selector:
@@ -530,9 +570,11 @@ spec:
       labels:
         name: queue-master
     spec:
+      imagePullSecrets:
+      - name: google-registry
       containers:
       - name: queue-master
-        image: weaveworksdemos/queue-master:0.3.1
+        image: us-docker.pkg.dev/orcasio/global/queue-master:b0.3.1
         env:
          - name: JAVA_OPTS
            value: -Xms64m -Xmx128m -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom -Dspring.zipkin.enabled=false
@@ -544,7 +586,7 @@ spec:
             cpu: 100m
             memory: 300Mi
         ports:
-        - containerPort: 80
+        - containerPort: 8080
       nodeSelector:
         beta.kubernetes.io/os: linux
 ---
@@ -556,12 +598,12 @@ metadata:
         prometheus.io/scrape: 'true'
   labels:
     name: queue-master
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   ports:
     # the port that this service should serve on
   - port: 80
-    targetPort: 80
+    targetPort: 8080
   selector:
     name: queue-master
 ---
@@ -571,7 +613,7 @@ metadata:
   name: rabbitmq
   labels:
     name: rabbitmq
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   replicas: 1
   selector:
@@ -584,6 +626,8 @@ spec:
       annotations:
         prometheus.io/scrape: "false"
     spec:
+      imagePullSecrets:
+      - name: google-registry
       containers:
       - name: rabbitmq
         image: rabbitmq:3.6.8-management
@@ -619,7 +663,7 @@ metadata:
         prometheus.io/port: '9090'
   labels:
     name: rabbitmq
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   ports:
     # the port that this service should serve on
@@ -639,7 +683,7 @@ metadata:
   name: session-db
   labels:
     name: session-db
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   replicas: 1
   selector:
@@ -652,6 +696,8 @@ spec:
       annotations:
         prometheus.io.scrape: "false"
     spec:
+      imagePullSecrets:
+      - name: google-registry
       containers:
       - name: session-db
         image: redis:alpine
@@ -676,7 +722,7 @@ metadata:
   name: session-db
   labels:
     name: session-db
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   ports:
     # the port that this service should serve on
@@ -691,7 +737,7 @@ metadata:
   name: shipping
   labels:
     name: shipping
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   replicas: 1
   selector:
@@ -702,9 +748,11 @@ spec:
       labels:
         name: shipping
     spec:
+      imagePullSecrets:
+      - name: google-registry
       containers:
       - name: shipping
-        image: weaveworksdemos/shipping:0.4.8
+        image: us-docker.pkg.dev/orcasio/global/shipping:b0.4.8
         env:
          - name: ZIPKIN
            value: zipkin.jaeger.svc.cluster.local
@@ -718,7 +766,7 @@ spec:
             cpu: 100m
             memory: 300Mi
         ports:
-        - containerPort: 80
+        - containerPort: 8080
         securityContext:
           runAsNonRoot: true
           runAsUser: 10001
@@ -746,12 +794,12 @@ metadata:
         prometheus.io/scrape: 'true'
   labels:
     name: shipping
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   ports:
     # the port that this service should serve on
   - port: 80
-    targetPort: 80
+    targetPort: 8080
   selector:
     name: shipping
 
@@ -762,7 +810,7 @@ metadata:
   name: user
   labels:
     name: user
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   replicas: 1
   selector:
@@ -773,9 +821,11 @@ spec:
       labels:
         name: user
     spec:
+      imagePullSecrets:
+      - name: google-registry
       containers:
       - name: user
-        image: weaveworksdemos/user:0.4.7
+        image: us-docker.pkg.dev/orcasio/global/user:b0.4.7
         resources:
           limits:
             cpu: 300m
@@ -784,7 +834,7 @@ spec:
             cpu: 100m
             memory: 100Mi
         ports:
-        - containerPort: 80
+        - containerPort: 8080
         env:
         - name: mongo
           value: user-db:27017
@@ -800,13 +850,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 80
+            port: 8080
           initialDelaySeconds: 300
           periodSeconds: 3
         readinessProbe:
           httpGet:
             path: /health
-            port: 80
+            port: 8080
           initialDelaySeconds: 180
           periodSeconds: 3
       nodeSelector:
@@ -820,12 +870,12 @@ metadata:
         prometheus.io/scrape: 'true'
   labels:
     name: user
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   ports:
     # the port that this service should serve on
   - port: 80
-    targetPort: 80
+    targetPort: 8080
   selector:
     name: user
 
@@ -836,7 +886,7 @@ metadata:
   name: user-db
   labels:
     name: user-db
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   replicas: 1
   selector:
@@ -847,10 +897,11 @@ spec:
       labels:
         name: user-db
     spec:
+      imagePullSecrets:
+      - name: google-registry
       containers:
       - name: user-db
-        image: weaveworksdemos/user-db:0.3.0
-
+        image: us-docker.pkg.dev/orcasio/global/user-db:b0.4.7
         ports:
         - name: mongo
           containerPort: 27017
@@ -864,10 +915,15 @@ spec:
               - SETUID
           readOnlyRootFilesystem: true
         volumeMounts:
+        - mountPath: /data
+          name: data-volume
         - mountPath: /tmp
           name: tmp-volume
       volumes:
         - name: tmp-volume
+          emptyDir:
+            medium: Memory
+        - name: data-volume
           emptyDir:
             medium: Memory
       nodeSelector:
@@ -879,7 +935,7 @@ metadata:
   name: user-db
   labels:
     name: user-db
-  namespace: sock-shop
+  namespace: socks-prod
 spec:
   ports:
     # the port that this service should serve on

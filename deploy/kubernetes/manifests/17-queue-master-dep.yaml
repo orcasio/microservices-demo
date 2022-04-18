@@ -5,7 +5,7 @@ metadata:
   name: queue-master
   labels:
     name: queue-master
-  namespace: sock-shop
+  namespace: __NAMESPACE__
 spec:
   replicas: 1
   selector:
@@ -16,9 +16,11 @@ spec:
       labels:
         name: queue-master
     spec:
+      imagePullSecrets:
+      - name: google-registry
       containers:
       - name: queue-master
-        image: weaveworksdemos/queue-master:0.3.1
+        image: __GROUP__/queue-master:__TAG_PREFIX__0.3.1
         env:
          - name: JAVA_OPTS
            value: -Xms64m -Xmx128m -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom -Dspring.zipkin.enabled=false
@@ -30,6 +32,6 @@ spec:
             cpu: 100m
             memory: 300Mi
         ports:
-        - containerPort: 80
+        - containerPort: 8080
       nodeSelector:
         beta.kubernetes.io/os: linux
